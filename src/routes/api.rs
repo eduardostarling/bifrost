@@ -85,7 +85,7 @@ fn get_groups(res: &MutexGuard<Resources>) -> ApiResult<HashMap<String, ApiGroup
     Ok(rooms)
 }
 
-fn get_scenes(owner: &Uuid, res: &MutexGuard<Resources>) -> ApiResult<HashMap<String, ApiScene>> {
+fn get_scenes(owner: &String, res: &MutexGuard<Resources>) -> ApiResult<HashMap<String, ApiScene>> {
     let mut scenes = HashMap::new();
 
     for rr in res.get_resources_by_type(RType::Scene) {
@@ -93,7 +93,7 @@ fn get_scenes(owner: &Uuid, res: &MutexGuard<Resources>) -> ApiResult<HashMap<St
 
         scenes.insert(
             res.get_id_v1(rr.id)?,
-            ApiScene::from_scene(res, *owner, scene)?,
+            ApiScene::from_scene(res, owner, scene)?,
         );
     }
 
@@ -103,12 +103,12 @@ fn get_scenes(owner: &Uuid, res: &MutexGuard<Resources>) -> ApiResult<HashMap<St
 #[allow(clippy::zero_sized_map_values)]
 async fn get_api_user(
     state: State<AppState>,
-    Path(username): Path<Uuid>,
+    Path(username): Path<String>,
 ) -> ApiResult<impl IntoResponse> {
     let lock = state.res.lock().await;
 
     Ok(Json(ApiUserConfig {
-        config: state.api_config(username),
+        config: state.api_config(&username),
         groups: get_groups(&lock)?,
         lights: get_lights(&lock)?,
         resourcelinks: HashMap::new(),
@@ -121,11 +121,11 @@ async fn get_api_user(
 
 async fn get_api_user_resource(
     State(state): State<AppState>,
-    Path((username, resource)): Path<(Uuid, ApiResourceType)>,
+    Path((username, resource)): Path<(String, ApiResourceType)>,
 ) -> ApiResult<Json<Value>> {
     let lock = &state.res.lock().await;
     match resource {
-        ApiResourceType::Config => Ok(Json(json!(state.api_config(username)))),
+        ApiResourceType::Config => Ok(Json(json!(state.api_config(&username)))),
         ApiResourceType::Lights => Ok(Json(json!(get_lights(lock)?))),
         ApiResourceType::Groups => Ok(Json(json!(get_groups(lock)?))),
         ApiResourceType::Scenes => Ok(Json(json!(get_scenes(&username, lock)?))),
@@ -138,7 +138,7 @@ async fn get_api_user_resource(
 }
 
 async fn post_api_user_resource(
-    Path((_username, resource)): Path<(Uuid, ApiResourceType)>,
+    Path((_username, resource)): Path<(String, ApiResourceType)>,
     Json(req): Json<Value>,
 ) -> ApiResult<Json<Value>> {
     warn!("POST v1 user resource unsupported");
@@ -158,7 +158,7 @@ async fn put_api_user_resource(
 #[allow(clippy::significant_drop_tightening)]
 async fn get_api_user_resource_id(
     State(state): State<AppState>,
-    Path((username, resource, id)): Path<(Uuid, ApiResourceType, u32)>,
+    Path((username, resource, id)): Path<(String, ApiResourceType, u32)>,
 ) -> ApiResult<impl IntoResponse> {
     log::debug!("GET v1 username={username} resource={resource:?} id={id}");
     let result = match resource {
@@ -177,7 +177,7 @@ async fn get_api_user_resource_id(
             let link = ResourceLink::new(uuid, RType::Scene);
             let scene = lock.get::<Scene>(&link)?;
 
-            json!(ApiScene::from_scene(&lock, username, scene)?)
+            json!(ApiScene::from_scene(&lock, &username, scene)?)
         }
         ApiResourceType::Groups => {
             let lock = state.res.lock().await;

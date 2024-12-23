@@ -535,7 +535,7 @@ pub struct ConfiguredReporting {
 pub struct Preset {
     pub description: String,
     pub name: String,
-    pub value: u16,
+    pub value: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

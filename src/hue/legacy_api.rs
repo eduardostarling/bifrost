@@ -230,7 +230,7 @@ pub struct ApiConfig {
     pub utc: DateTime<Utc>,
     #[serde(with = "date_format::local")]
     pub localtime: DateTime<Local>,
-    pub whitelist: HashMap<Uuid, Whitelist>,
+    pub whitelist: HashMap<String, Whitelist>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -499,7 +499,7 @@ pub struct ApiScene {
     scene_type: ApiSceneType,
     lights: Vec<String>,
     lightstates: HashMap<String, ApiLightStateUpdate>,
-    owner: Uuid,
+    owner: String,
     recycle: bool,
     locked: bool,
     appdata: ApiSceneAppData,
@@ -512,7 +512,7 @@ pub struct ApiScene {
 }
 
 impl ApiScene {
-    pub fn from_scene(res: &Resources, owner: Uuid, scene: &api::Scene) -> ApiResult<Self> {
+    pub fn from_scene(res: &Resources, owner: &String, scene: &api::Scene) -> ApiResult<Self> {
         let lights = scene
             .actions
             .iter()
@@ -537,7 +537,7 @@ impl ApiScene {
             scene_type: ApiSceneType::GroupScene,
             lights,
             lightstates,
-            owner,
+            owner: owner.clone().to_string(),
             recycle: false,
             locked: false,
             /* Some clients (e.g. Hue Essentials) require .appdata */
